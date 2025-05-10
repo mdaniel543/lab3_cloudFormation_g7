@@ -1,0 +1,221 @@
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Infraestructura con 2 instancias EC2 en alta disponibilidad detrás de un Load Balancer con NGINX
+
+Parameters:
+  KeyName:
+    Description: Nombre del par de claves SSH existente en tu cuenta
+    Type: AWS::EC2::KeyPair::KeyName
+
+Resources:
+  WebVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.1.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: WebVPC
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WebVPC
+      CidrBlock: 10.1.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: PublicSubnet1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WebVPC
+      CidrBlock: 10.1.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: PublicSubnet2
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref WebVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref WebVPC
+
+  Route:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  SubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref RouteTable
+
+  SubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref RouteTable
+
+  WebSG1:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Permitir HTTP y SSH
+      VpcId: !Ref WebVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        InstanceType: t2.micro
+        KeyName: !Ref KeyName
+        ImageId: ami-0c02fb55956c7d316  # Amazon Linux 2 (us-east-1)
+        SecurityGroupIds:
+          - !Ref WebSG1
+        UserData:
+          Fn::Base64: |
+            #!/bin/bash
+            yum update -y
+            amazon-linux-extras install nginx1 -y
+            systemctl enable nginx
+            
+            # Crear archivo HTML con el formato exacto solicitado
+            echo '<!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Servidor Web de Alta Disponibilidad</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                        background-color: #f0f0f0;
+                    }
+                    .container {
+                        max-width: 800px;
+                        margin: 0 auto;
+                        background-color: white;
+                        padding: 20px;
+                        border-radius: 5px;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    }
+                    h1 {
+                        color: #2c3e50;
+                        border-bottom: 2px solid #3498db;
+                        padding-bottom: 10px;
+                    }
+                    .hostname {
+                        background-color: #3498db;
+                        color: white;
+                        padding: 5px 10px;
+                        border-radius: 3px;
+                    }
+                    ul {
+                        list-style-type: none;
+                        padding: 0;
+                    }
+                    li {
+                        padding: 10px;
+                        margin-bottom: 5px;
+                        background-color: #ecf0f1;
+                        border-left: 4px solid #3498db;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>Servidor Web Activo desde <span class="hostname">HOSTNAME</span> para el Grupo 7</h1>
+                    
+                    <h2>Nombres:</h2>
+                    <ul>
+                        <li>Devin Velasquez</li>
+                        <li>Joshua Osorio</li>
+                        <li>Marvin Rodriguez</li>
+                        <li>Kevin García</li>
+                    </ul>
+                    
+                    <p>Arquitectura de Alta Disponibilidad con NGINX en AWS</p>
+                </div>
+            </body>
+            </html>' > /usr/share/nginx/html/index.html
+            
+            ACTUAL_HOSTNAME=$(hostname)
+            sed -i "s/HOSTNAME/$ACTUAL_HOSTNAME/g" /usr/share/nginx/html/index.html
+            # Iniciar NGINX
+            systemctl start nginx
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId: !Ref WebVPC
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance
+      HealthCheckPath: /
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      SecurityGroups:
+        - !Ref WebSG1
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MinSize: 2
+      MaxSize: 2
+      DesiredCapacity: 2
+      TargetGroupARNs:
+        - !Ref TargetGroup
+
+Outputs:
+  LoadBalancerDNS:
+    Description: "DNS del Load Balancer"
+    Value: !GetAtt LoadBalancer.DNSName
