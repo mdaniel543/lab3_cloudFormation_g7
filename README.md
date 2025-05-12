@@ -51,7 +51,7 @@ http://infraa-loadb-ihxkl0dz4inm-2104684887.us-east-1.elb.amazonaws.com/
 Cada integrante del grupo debe dejar un breve comentario sobre su experiencia o aprendizajes:
 
 - **Marvin Rodriguez:**  
- 
+  _"Aprendí a utilizar CloudFormation de forma completa, ya que antes no conocía esta herramienta. Aunque ya sabía cómo funcionaban las instancias EC2 y el Load Balancer, descubrí que su creación se puede automatizar totalmente. Además, el diagrama visual que genera es muy útil para documentar o replicar la arquitectura en otras cuentas."_  
 
  
 
