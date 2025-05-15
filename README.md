@@ -56,7 +56,8 @@ Cada integrante del grupo debe dejar un breve comentario sobre su experiencia o 
 - **Devin Velásquez:**  
   _"Es importante comprender cómo desplegar infraestructura automatizada y de alta disponibilidad en AWS usando CloudFormation, el valor de distribuir instancias en distintas zonas de disponibilidad y utilizar un balanceador de carga para mantener la continuidad del servicio. Además, se reconoció la utilidad de CloudFormation Designer para visualizar y documentar la arquitectura implementada."_  
  
- 
+ - **Kevin García**
+  _"En mi experiencia, CloudFormation ha sido una herramienta realmente útil que me ha simplificado mucho el trabajo. Lo que más me gusta es que puedo escribir una vez todo lo que necesito y luego crear los mismos recursos exactamente igual las veces que quiera. Antes tenía que invertir varias horas configurando servidores y servicios manualmente, cometiendo errores y olvidando pasos, ahora con solo un archivo, puedo crear toda mi infraestructura de manera consistente y rápida."
 
 
 
