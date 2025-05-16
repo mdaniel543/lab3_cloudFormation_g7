@@ -59,5 +59,7 @@ Cada integrante del grupo debe dejar un breve comentario sobre su experiencia o 
 - **Kevin García:**  
   _"En mi experiencia, CloudFormation ha sido una herramienta realmente útil que me ha simplificado mucho el trabajo. Lo que más me gusta es que puedo escribir una vez todo lo que necesito y luego crear los mismos recursos exactamente igual las veces que quiera. Antes tenía que invertir varias horas configurando servidores y servicios manualmente, cometiendo errores y olvidando pasos, ahora con solo un archivo, puedo crear toda mi infraestructura de manera consistente y rápida."_
 
+- **Joshua Osorio:**  
+  _"El realizar este laboratorio me permitió aprender como aplicar los conceptos de alta disponibilidad en la nube, haciendo uso de CloudFormation para automarizar el despliegue de la infraestructura. Esto demuestra que existen herramientas muy potentes, que facilitan todo este trabajo, permiten ahorrar tiempo que antes se perdía tan solo en hacer unas simples configuraciones."_
 
 
